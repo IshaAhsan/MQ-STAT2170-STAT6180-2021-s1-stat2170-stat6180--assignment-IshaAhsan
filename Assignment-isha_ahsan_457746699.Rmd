@@ -1,0 +1,235 @@
+---
+title: "Assignment"
+author: "Isha"
+date: "5/19/2021"
+output: pdf_document
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(ggplot2)
+# setwd()
+surg <- read.delim("surg.dat", header = TRUE, sep= " ") 
+kml <- read.delim("kml.dat", header = TRUE, sep=" ")
+```
+
+## Question 1
+
+A medical research team wants to investigate the survival time of patients that have a particular type of liver operation as part of their treatment. For each patient in the study, the following variables were recorded:
+
+```{r}
+str(surg)
+```
+
+
+### a. Produce a scatterplot of the data and comment on the features of the data and possible relationships between the response and predictors and relationships between the predictors themselves.
+
+* You will need to remove the gender variable to do this.
+
+```{r}
+str(surg)
+surg1 <- subset(surg, select = -c(gender) )
+```
+
+There are total 7 features in the data with 54 records. Survival is response variable while other 6 are predictor variables. 
+
+
+* Comment on why it is necessary to remove the gender variable to compute the correlation matrix.
+
+For correlation matrix, only numeric variables are taken. While gender variable is of character type. So, with subset, gender variable is removed. 
+
+```{r}
+pairs(~survival+blood+prognosis+enzyme+liver+age,data=surg1,
+   main="Scatterplot of Data")
+```
+
+### b. Compute the correlation matrix of the dataset and comment.
+
+```{r}
+cor_mat <- cor(surg1)
+cor_mat
+```
+
+To evaluate the correlation between variables, correlation matrix is used. When the correlation between variables is above 0 it means positive correlation and if it's less than 1, it means negative correlation. From above analysis we can see that correlation between survival and liver is highest which is 0.67. Next most important predictor is enzyme with 0.57 correlation. After that prognosis and blood have correlation of about 0.42 and 0.34 respectively with response variable survival.
+
+### c. Fit a model using all the predictors to explain the survival response. Conduct an F-test for the overall regression i.e. is there any relationship between the response and the predictors. In your answer:
+
+* Write down the mathematical multiple regression model for this situation, defining all appropriate
+parameters.
+
+```{r}
+# with all variables
+model <- lm(survival ~., data = surg)
+model1 <- lm(survival ~ . -blood, data = surg)
+model2 <- lm(survival ~ blood+prognosis, data = surg)
+model3 <- lm(survival ~ blood+prognosis+enzyme+liver, data = surg)
+```
+
+
+* Write down the Hypotheses for the Overall ANOVA test of multiple regression.
+
+* **Null Hypothesis H0: Liver, prognosis, blood and enzyme are not significant variables to predict survival** 
+* **Alternative Hypothesis H1: Liver, prognosis, blood and enzyme are significant variables to predict survival ** 
+
+* Produce an ANOVA table for the overall multiple regression model (One combined regression SS
+source is sufficient).
+
+```{r}
+aov_mod <- anova(model)
+aov_mod
+```
+
+* Compute the F statistic for this test.
+
+```{r}
+aov_mod$`F value`
+```
+
+* State the Null distribution.
+
+The null distribution defines the sets of data under null hypothesis. If the p-value is less than 0.05 which is significant level. Here from overall p-value we can see that `model3` is significant. While blood prognosis and enzyme are significant in terms of survival. 
+
+* Compute the P-Value
+
+```{r}
+t.value = (mean(surg1$survival) - 10) / (sd(surg1$survival) / sqrt(length(surg1$survival))) 
+p.value = 2*pt(-abs(t.value), df=length(surg1$survival)-1)
+p.value
+```
+
+* State your conclusion (both statistical conclusion and contextual conclusion).
+
+From the above analysis, we can see that model have some significant variables which are blood, prognosis and enzyme. The p-value of these variables is less than 0.05 which is proof of it's significance. The model gives the r-squared value of 0.69 which shows that it is giving 69% variance in model. The overall p-value is 1.19e-10 which shows that overall model is significant. If we talk about contextual conclusion we can see that p-value for survival is almost 7.659093e-18 which is showing it's significance. 
+
+
+### d. Using model selection procedures discussed in the course, find the best multiple regression model that explains the data.
+
+```{r}
+summary(model)
+summary(model1)
+summary(model2)
+summary(model3)
+
+```
+
+From the above analysis, we can see that model3 is best model. 
+
+
+### e. Validate your final model and comment why it is not appropriate to use the multiple regression model to explain the survival time.
+
+model3 is giving best variance i.e. 69% which is almost equal to model1 but the problem is model1 using all the variables while model3 is using just 4 positively related variables. Multiple regression model includes independent variables like continuous and categorical which is not appropriate for explanation of survival time. 
+
+
+### f. Re-fit the model using log(survival) as the new response variable. In your answer,
+
+* Use the model selection procedure discussed in the course starting with log(survival) as the
+response and start with all the predictors.
+
+```{r}
+model4 <- lm(log(survival) ~., data = surg)
+model5 <- lm(log(survival) ~ blood + prognosis, data = surg)
+model6 <- lm(log(survival) ~ blood + prognosis + enzyme + liver, data = surg)
+model7 <- lm(log(survival) ~ enzyme + liver + gender + age, data = surg)
+```
+
+
+
+### g. Validate your final model with the log(survival) response. In particular, in your answer,
+
+* Explain why the regression model with log(survival) response variable is superior to the model
+with the survival response variable
+
+```{r}
+summary(model4)
+summary(model5)
+summary(model6)
+summary(model7)
+```
+
+Here `model4` is best model which gives the 77% variance. With log transformation survival variable will change into normal distribution. This will gives a model more accuracy.
+
+## Question 2
+
+A car manufacturer wants to study the fuel efficiency of a new car engine. It wishes to account for any
+differences between the driver and production variation. The manufacturer randomly selects 5 cars from the
+production line and recruits 4 different test drivers.
+
+```{r}
+str(kml)
+```
+
+### a. For this study, is the design balanced or unbalanced? Explain why.
+
+```{r}
+summary(kml$kmL)
+plot(kml$kmL, ylab = "kmL")
+```
+
+From the above plot and summary statistics, we can see that mean value is 12.77 and in plot we can see that values are almost equally distributes above and below this point with 10.54 minimum value and 15.60 maximum value.
+
+### b. Construct two different preliminary graphs that investigate different features of the data and comment.
+
+```{r}
+kml$driver <- as.factor(kml$driver)
+kml$car <- as.numeric(as.factor(kml$car))
+ggplot(kml, aes(x=kmL, y=car, fill=driver)) +
+  geom_boxplot() + theme_bw()
+```
+
+From the above plot we can see that four drivers have different observed efficiency car's. Driver B is getting high efficient car with more than 13.5 km/L.
+
+
+```{r}
+ggplot(data=kml, aes(x=kmL, y = car, fill=driver)) +
+  geom_bar(stat="identity")+
+  theme_bw()
+```
+
+From this plot, we can see that average efficiency of cars is between 12 to 13. While most people select driver A cars while car's with driver B has high efficiency of more than 15 here.
+
+
+### c. Analyse the data, stating null and alternative hypothesis for each test, and check assumptions.
+
+* **Null Hypothesis H0: Driver and car are not effecting the kmL** 
+* **Alternative Hypothesis H1: Driver and car are effecting the kmL ** 
+
+
+```{r}
+summary(kml)
+```
+
+```{r}
+mod <- lm(kmL~. , data = kml)
+summary(mod)
+```
+
+From the above model we can see that p-value is less than 0.05 significant level so we reject null hypothesis and consider alternative hypothesis.
+
+**Hypothesis Test**
+
+```{r}
+anova(mod)
+```
+
+From the above anova test we can see that driver is more significant than car.
+
+### d. State your conclusions about the effect of driver and car on the efficiency kmL. These conclusions are only required to be at the qualitative level and can be based off the outcomes of the hypothesis tests in c. and the preliminary plots in b. You do not need to statistically examine the multiple comparisons between contrasts and interactions.
+
+From the above analysis, we first made scatter plot to check the design balance which gives the result that design is balanced. In part b, B driver car is more efficient with more than 15 efficiency. In part three, kmL is tested using linear model and anova hypothesis testing. Linear regression model gives the 73% variance and shows the significance of both driver and car variables. Variable driver is more significant according to model and also according to anova test as the p-value is less than 0.05 significant level.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
